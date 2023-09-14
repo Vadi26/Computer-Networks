@@ -89,7 +89,7 @@ def printAllSubnets(classType, IP, numOfSubnets, numOfHosts, networkID, setBits)
             # print("Broadcast Address : ", listToIP(bcNum))
             print()
             output.append([listToIP(nwNum), listToIP(startAddress), listToIP(endAddress), listToIP(bcNum)])
-            nwNum[2] += inc
+            nwNum[2] = inc
             inc += intialInc
 
     elif (classType == 'C'):
