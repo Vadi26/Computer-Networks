@@ -1,7 +1,9 @@
 import socket
 
 def start_client(server_host, server_port):
+    # used socket.SOCK_STREAM for TCP connection
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # to establish connection to the server
     client_socket.connect((server_host, server_port))
 
     while True:
@@ -9,16 +11,17 @@ def start_client(server_host, server_port):
         if message.lower() == 'exit':
             break
 
-        # Send the message to the server
+        # send the message to the server
         client_socket.send(message.encode('utf-8'))
 
-        # Receive and print the server's response
+        # receive and print the server's response
         response = client_socket.recv(1024).decode('utf-8')
         print(f"Received from server: {response}")
 
+    # this line releases the resources and properly closes the connection
+    print("Closing the connection !")
     client_socket.close()
 
-if __name__ == "__main__":
-    server_host = "127.0.0.1"  # Replace with the server's IP
-    server_port = 12345  # Use the same port as the server
-    start_client(server_host, server_port)
+server_host = "0.0.0.0"  # Replace with the server's IP
+server_port = 12344  # Use the same port as the server
+start_client(server_host, server_port)

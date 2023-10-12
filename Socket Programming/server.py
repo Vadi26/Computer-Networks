@@ -3,6 +3,7 @@ import socket
 def start_server(host, port):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((host, port))
+    # '5' indicates that it allows upto 5 pending connections in the servers connection queue
     server_socket.listen(5)
     print(f"Server listening on {host}:{port}")
 
@@ -14,7 +15,9 @@ def start_server(host, port):
         while True:
             data = client_socket.recv(1024).decode('utf-8')
             if not data:
+                print(f"Connection closed with {client_address}")
                 break
+
             print(f"Received from client: {data}")
 
             # Echo the received message back to the client
@@ -23,7 +26,7 @@ def start_server(host, port):
 
         client_socket.close()
 
-if __name__ == "__main__":
-    host = "10.100.111.186"  # Replace with your server's IP
-    port = 12344  # Choose an available port
-    start_server(host, port)
+
+host = "0.0.0.0"  # Replace with your server's IP
+port = 12344  # Choose an available port
+start_server(host, port)
