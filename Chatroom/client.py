@@ -17,12 +17,17 @@ def receive():
         except:
             print("An error occurred :(")
             client.close()
+            print("Closing the connection !")
             break
 
 def write():
     while True:
         message = f'{nickname}: {input("")}'
+        if message == f"{nickname}: exit":
+            break
         client.send(message.encode('ascii'))
+    print("Closing the connection !")
+    client.close()
 
 receive_thread = threading.Thread(target=receive)
 receive_thread.start()
