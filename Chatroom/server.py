@@ -1,9 +1,9 @@
 import threading
 import socket
 
-# host = '127.0.0.1'   #localhost(Should be the ip address of the server)
-host = '10.100.107.32'
-port = 55554
+host = '127.0.0.1'   #localhost(Should be the ip address of the server)
+# host = '10.100.107.32'
+port = 55555
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind((host, port))
