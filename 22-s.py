@@ -4,6 +4,7 @@ import random
 import copy
 
 SERVER_ADDRESS = ("localhost", 12345)
+SEQ_NUM = 0
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -19,6 +20,8 @@ def calculate_checksum(message):
 while True:
     try:
         message = input("Client: Enter your message (or 'exit' to quit): ")
+        prevseq = SEQ_NUM
+        SEQ_NUM = SEQ_NUM ^ 1
         if message.lower() == 'exit':
             packet = message.encode('utf-8')
             client_socket.sendto(packet, SERVER_ADDRESS)
@@ -26,8 +29,8 @@ while True:
         
         originalMessage = copy.deepcopy(message)
         checksum = calculate_checksum(message)
-        message = message + ':' + str(checksum)
-        originalMessage = originalMessage + ':' + str(checksum)
+        message = message + ':' + str(checksum) + ':' + str(SEQ_NUM)
+        originalMessage = originalMessage + ':' + str(checksum) + ':' + str(SEQ_NUM)
         
         if random.random() < 0.5:
             error_position = random.randint(0, len(message) - 4)
@@ -40,15 +43,18 @@ while True:
 
         ack_received = False
         ackNAK, _ = client_socket.recvfrom(5)
-        ackNAK = ackNAK.decode()
-        if ackNAK == "ACK":
-            print("ACK received !")
+        print(ackNAK.decode())
+        ack, seqNum = ackNAK.decode('utf-8').split(':', 1)
+        if seqNum == str(SEQ_NUM):
+            print(f"ACK {SEQ_NUM} received !(Actual acknowledgement received)")
         else:
-            while ackNAK != "ACK":
-                print("NAK received. Resending...")
+            while int(seqNum) != SEQ_NUM:
+                print("NAK Received")
+                print("Received :", seqNum, "Expected :", SEQ_NUM)
+                print(f"ACK {seqNum} received. Resending...")
                 time.sleep(2)
                 checksum = calculate_checksum(originalMessage)
-                message = originalMessage + ':' + str(checksum)
+                message = originalMessage + ':' + str(checksum) + ':' + str(SEQ_NUM)
 
                 if random.random() < 0.1:
                     error_position = random.randint(0, len(message) - 4)
@@ -56,8 +62,10 @@ while True:
 
                 packet = message.encode('utf-8')
                 client_socket.sendto(packet, SERVER_ADDRESS)
+                time.sleep(2)
                 ackNAK, _ = client_socket.recvfrom(5)
-                ackNAK = ackNAK.decode()
+                ack, seqNum = ackNAK.decode('utf-8').split(':', 1)
+                print("RECEIVED PACKET LOOKS SOMETHING LIKE THIS : ", ack)
 
     except Exception as e:
         print(f"Error: {e}")

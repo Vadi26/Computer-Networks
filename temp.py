@@ -1,4 +1,9 @@
-checksum = "98:89"
-
-if ':' in checksum:
-    print("BOOOYEAH")
+hehe = 0
+hehe = ~hehe
+print(hehe)
+hehe = ~hehe
+print(hehe)
+hehe = ~hehe
+print(hehe)
+hehe = ~hehe
+print(hehe)
