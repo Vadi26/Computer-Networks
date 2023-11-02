@@ -43,15 +43,14 @@ while True:
 
         ack_received = False
         ackNAK, _ = client_socket.recvfrom(5)
-        print(ackNAK.decode())
         ack, seqNum = ackNAK.decode('utf-8').split(':', 1)
         if seqNum == str(SEQ_NUM):
-            print(f"ACK {SEQ_NUM} received !(Actual acknowledgement received)")
+            print(f"ACK {SEQ_NUM} received ")
         else:
             while int(seqNum) != SEQ_NUM:
-                print("NAK Received")
-                print("Received :", seqNum, "Expected :", SEQ_NUM)
-                print(f"ACK {seqNum} received. Resending...")
+                print(f"ACK {seqNum} received")
+                print("Received ACK number : ", seqNum, "Expected ACK number : ", SEQ_NUM)
+                print("Resending the packet ...")
                 time.sleep(2)
                 checksum = calculate_checksum(originalMessage)
                 message = originalMessage + ':' + str(checksum) + ':' + str(SEQ_NUM)
@@ -65,7 +64,6 @@ while True:
                 time.sleep(2)
                 ackNAK, _ = client_socket.recvfrom(5)
                 ack, seqNum = ackNAK.decode('utf-8').split(':', 1)
-                print("RECEIVED PACKET LOOKS SOMETHING LIKE THIS : ", ack)
 
     except Exception as e:
         print(f"Error: {e}")

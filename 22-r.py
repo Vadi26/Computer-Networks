@@ -17,7 +17,7 @@ def calculate_checksum(message):
     return checksum
 
 while True:
-    try:
+    # try:
         prev = SEQ_NUM
         data, client_address = server_socket.recvfrom(1024)
         if (data.decode('utf-8') == 'exit'):
@@ -26,14 +26,12 @@ while True:
         checksum, seqNum = rest.split(':', 1)
         if ':' in checksum:
             checksum, _ = checksum.split(':', 1)
-        print(message, ':', checksum)
 
         if checksum == str(calculate_checksum(message)):
             SEQ_NUM = SEQ_NUM ^ 1
             packet = "ACK" + ':' + str(SEQ_NUM)
-            print("ACK being sent : ", packet)
-            print(f"Received message: \"{message}\". Sending ACK.")
-            time.sleep(2)
+            print(f"Received message ->  \"{message}\".")
+            print("Rsponse being sent -> ", packet)
             server_socket.sendto(packet.encode(), client_address)
 
         else:
@@ -41,16 +39,16 @@ while True:
                 packet = "ACK" + ':' + str(prev)
             else:
                 packet = "ACK" + ':' + str(SEQ_NUM)
-            print(f"Received message: \"{message}\". Sending NACK.")
-            print("PACKET being sent : ", packet)
-            print("Erroneous packet received ...")
+            print(f"Received message ->  \"{message}\".")
+            print("Erroneous packet received !")
+            print("Response being sent -> ", packet)
             server_socket.sendto(packet.encode(), client_address)
 
         if message.lower() == 'exit':
             print(f"Connection terminated with {client_address}.")
             break
 
-    except KeyboardInterrupt:
-        print(f"Connection interrupted with {client_address}.")
+    # except KeyboardInterrupt:
+    #     print(f"Connection interrupted with {client_address}.")
 
 server_socket.close()
