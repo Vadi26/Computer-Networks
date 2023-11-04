@@ -17,7 +17,7 @@ acked = [False] * len(packets)
 def send_packets():
     global next_seq_num
     while next_seq_num < len(packets):
-        if next_seq_num < base + window_size:
+        if next_seq_num < 12:
             packet = f"{next_seq_num}:{packets[next_seq_num]}"
             sender_socket.sendto(packet.encode(), (receiver_host, receiver_port))
             print(f"Sent packet {next_seq_num}")
@@ -37,7 +37,11 @@ def receive_acks():
             print(f"Received acknowledgment for packet {ack_num}")
             acked[ack_num] = True
     except socket.timeout:
-        pass
+        for i in range(len(acked)):
+            if acked[i] == False:
+                packet = f"{i}:{packets[i]}"
+                sender_socket.sendto(packet.encode(), (receiver_host, receiver_port))
+                print(f"Sent packet {i}")
 
 while base < len(packets):
     send_packets()
