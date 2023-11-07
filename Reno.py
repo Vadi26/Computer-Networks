@@ -1,95 +1,86 @@
-import matplotlib.pyplot as plt
 import random
 
-class TCPRenoAlternative:
-    def __init__(self, max_packets, initial_threshold, timeouts, dupacks, threedupacks):
-        self.max_packets = max_packets
-        self.initial_threshold = initial_threshold
-        self.timeouts = timeouts
-        self.dupacks = dupacks
-        self.threedupacks = threedupacks
-        self.x_data = []
-        self.y_data = []
-        self.base_cwnd = 1
-        self.ss_phase = 1
-        self.ca_phase = 0
-        self.fr_phase = 0
-        self.current_cwnd = 1
-        self.dupack_count = 0
+def create_window(start_window, cwnd):
+    window = list(range(start_window, start_window + cwnd))
+    return window
 
-    def simulate(self):
-        for i in range(1, self.max_packets + 1):
-            if i == 1:
-                self.current_cwnd = self.base_cwnd
+def send_window(window, cwnd):
+    print(f"Sending packets in window: {window}, cwnd = {cwnd}")
+
+def simulate_acknowledgments(window, cwnd):
+    acked_packets = [random.random() <= 0.95 for _ in range(cwnd)]
+    return acked_packets
+
+def main():
+    n = int(input("Enter the total number of packets: "))
+    cwnd = 1
+    last_seq_acked = 0
+    start_window = 1
+    threshold = 8
+    fast_recovery_ack = False
+
+    print(f"Initial Threshold = {threshold}")
+
+    i = 0
+    while last_seq_acked != n:
+        print("\n")
+
+        if i == 10:
+            pass
+
+        if (start_window + cwnd - 1) > n:
+            cwnd = n - start_window + 1
+
+        window = list(range(start_window, start_window + cwnd))
+
+        print(f"Sending packets in window: {window}, cwnd = {cwnd}")
+
+        acked_packets = [random.random() <= 0.95 for _ in range(cwnd)]
+
+        if all(acked_packets):
+            start_window += cwnd
+            if cwnd >= threshold:
+                cwnd += 1
             else:
-                if i in self.timeouts:
-                    if self.ca_phase == 1:
-                        self.ca_phase = 0
-                    if self.fr_phase == 1:
-                        self.fr_phase = 0
-                    self.ss_phase = 1
-                    self.current_cwnd = self.base_cwnd
-                    self.dupack_count = 0
-                elif i - 1 in self.dupacks:
-                    if self.ss_phase == 1:
-                        self.ss_phase = 0
-                        self.dupack_count += 1
-                        self.current_cwnd *= 2
-                    elif self.ca_phase == 1:
-                        self.ca_phase = 0
-                        self.dupack_count += 1
-                    else:
-                        self.current_cwnd = self.current_cwnd + 1
-                elif i - 1 in self.threedupacks:
-                    if self.ss_phase == 1:
-                        self.ss_phase = 0
-                    elif self.ca_phase == 1:
-                        self.ca_phase = 0
-                    self.fr_phase = 1
-                    ssthresh = int(self.current_cwnd / 2)
-                    self.current_cwnd = ssthresh + 3
+                cwnd *= 2
+            last_seq_acked = start_window - 1
+            print(f"All packets in the window acknowledged. Increasing cwnd and window start.")
+            print(f"Increasing cwnd to => {cwnd}")
+            print(f"Increasing the start window to => {start_window}")
+            print(f"Current Threshold value => {threshold}")
+
+        else:
+            index = acked_packets.index(False)
+            lost_packet = window[index]
+            last_seq_acked = lost_packet - 1
+            start_window = lost_packet
+            threshold = cwnd // 2
+
+            print("Some packet loss / error occured !")
+            print(f"Resetting cwnd to => {cwnd}")
+            print(f"Resetting the Threshold value => {threshold}")
+            print(f"Next start window becomes => {start_window}")
+
+            fast_recovery_ack = False
+            print("\n-----------------Starting fast recovery-----------------\n")
+
+            cwnd = threshold + 3
+            if (start_window + cwnd - 1) > n:
+                cwnd = n - start_window + 1
+
+            while not fast_recovery_ack:
+                window = create_window(start_window, cwnd)
+                send_window(window, cwnd)
+                acked_packets = simulate_acknowledgments(window, cwnd)
+
+                if all(acked_packets[:3]):
+                    fast_recovery_ack = True
+                    cwnd = 1
+                    start_window = lost_packet
+                    print("\n-----------------Ending fast recovery-----------------\n")
                 else:
-                    if self.ss_phase == 1:
-                        self.current_cwnd *= 2
-                    elif self.ca_phase == 1:
-                        self.current_cwnd += 1
-                    else:
-                        ssthresh = int(self.current_cwnd / 2)
-                        self.current_cwnd = ssthresh
-                        self.fr_phase = 0
-                        self.ca_phase = 1
-                    self.dupack_count = 0
+                    print("Resending window until 3 duplicate ACKs are not received...")
+            continue
 
-            self.x_data.append(i)
-            self.y_data.append(self.current_cwnd)
 
-    def plot_results(self):
-        fig = plt.figure(figsize=(9, 7), facecolor="#b5b0bf")
-        ax = plt.axes()
-        ax.set_facecolor("#b5b0bf")
-
-        plt.xticks(self.x_data)
-        right_side = ax.spines["right"]
-        right_side.set_visible(False)
-        top_line = ax.spines["top"]
-        top_line.set_visible(False)
-
-        fontsize = 15
-        ax.plot(self.x_data, self.y_data, marker=".", color="#513f8f", linewidth=2, markerfacecolor="black", markersize=12)
-        plt.title("Alternative TCP Reno Simulation", fontdict={'fontsize': fontsize + 5})
-        plt.xlabel("Packets sent (RTTs)", fontdict={'fontsize': fontsize})
-        plt.ylabel("Size of cwnd (in MSS)", fontdict={'fontsize': fontsize})
-        plt.grid(True, color='#b5b0bf', linestyle='-', linewidth=2)
-        plt.gca().patch.set_facecolor('0.8')
-        plt.show()
-
-if __name__ == "__main__":
-    max_packets = int(input("Enter the number of packets to be sent: "))
-    initial_threshold = int(input("Enter the initial threshold: "))
-    timeouts = [int(x) for x in input("Enter at what packets the timeout occurs with spaces in between: ").split()]
-    dupacks = [int(x) for x in input("Enter at what packets duplicate ACKs arrive with spaces in between: ").split()]
-    threedupacks = [int(x) for x in input("Enter at what packets 3 duplicate ACKs arrive with spaces in between: ").split()]
-
-    simulation = TCPRenoAlternative(max_packets, initial_threshold, timeouts, dupacks, threedupacks)
-    simulation.simulate()
-    simulation.plot_results()
+main()
