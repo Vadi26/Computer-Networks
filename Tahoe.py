@@ -1,75 +1,51 @@
-import matplotlib.pyplot as plt
 import random
 
-class TCPAlternativeTahoe:
-    def __init__(self, max_packets, initial_threshold):
-        self.max_packets = max_packets
-        self.initial_threshold = initial_threshold
-        self.xValues = []
-        self.yValues = []
-        self.initial_cwnd = 1
-        self.isThresh = 1
-        self.isCongestionAvoidance = 0
-        self.current_cwnd = 1
-        # self.timeout_packets = sorted(random.sample(range(1, max_packets + 1), max(3, random.randint(1, max_packets))))
-        self.timeout_packets = [8, 12, 20]
+no_of_packets = int(input("Enter the total number of packets: "))
+cwnd = 1
+last_seq_acked = 0
+start_window = 1
+threshold = 8
 
-    def simulate(self):
-        i = 1
-        timeout_index = 0
-        threshold = self.initial_threshold
-        while i <= self.max_packets:
-            self.xValues.append(i)
-            if i == 1:
-                self.current_cwnd = self.initial_cwnd
-            else:
-                if timeout_index < len(self.timeout_packets) and i == self.timeout_packets[timeout_index]:
-                    self.isThresh = 1
-                    if self.isCongestionAvoidance:
-                        self.isCongestionAvoidance = 0
-                    threshold = int(self.current_cwnd / 2)
-                    self.current_cwnd = self.initial_cwnd
-                    timeout_index += 1
-                elif self.current_cwnd >= threshold and self.isCongestionAvoidance == 0:
-                    self.current_cwnd = threshold
-                    self.isCongestionAvoidance = 1
-                    self.isThresh = 0
-                    self.current_cwnd = self.current_cwnd + 1
-                elif self.isCongestionAvoidance == 1:
-                    self.current_cwnd = self.current_cwnd + 1
-                elif self.isThresh == 1:
-                    self.current_cwnd = self.current_cwnd * 2
-                    if self.current_cwnd > threshold:
-                        self.current_cwnd = threshold
-            i += 1
-            self.yValues.append(self.current_cwnd)
+print(f"Initial Threshold = {threshold}")
 
-    def plot_results(self):
-        fig = plt.figure(figsize=(9, 7), facecolor="#b5b0bf")
-        ax = plt.axes()
-        ax.set_facecolor("#b5b0bf")
+i = 0
+while last_seq_acked != no_of_packets:
+    print("\n")
 
-        plt.xticks(self.xValues)
-        right_side = ax.spines["right"]
-        right_side.set_visible(False)
-        top_line = ax.spines["top"]
-        top_line.set_visible(False)
+    if i == 10:
+        pass
 
-        fontsize = 15
-        ax.plot(self.xValues, self.yValues, marker=".", color="#513f8f", linewidth=2, markerfacecolor="black", markersize=12)
-        plt.title("Alternative TCP Tahoe Simulation", fontdict={'fontsize': fontsize + 5})
-        plt.xlabel("Packets sent (RTTs)", fontdict={'fontsize': fontsize})
-        plt.ylabel("Size of cwnd (in MSS)", fontdict={'fontsize': fontsize})
-        # plt.grid(True, color='#b5b0bf', linestyle='-', linewidth=2)
-        # plt.gca().patch.set_facecolor('0.8')
-        plt.show()
+    if (start_window + cwnd - 1) > no_of_packets:
+        cwnd = no_of_packets - start_window + 1
 
-if __name__ == "__main__":
-    # max_packets = int(input("Enter the number of packets to be sent: "))
-    max_packets = 30
-    # initial_threshold = int(input("Enter the initial threshold: "))
-    initial_threshold = 8
+    window = list(range(start_window, start_window + cwnd))
 
-    simulation = TCPAlternativeTahoe(max_packets, initial_threshold)
-    simulation.simulate()
-    simulation.plot_results()
+    print(f"Sending packets in window: {window}, cwnd = {cwnd}")
+
+    acked_packets = [random.random() <= 0.95 for _ in range(cwnd)]
+
+    lost_packets = [seq for seq, acked in zip(window, acked_packets) if not acked]
+
+    if lost_packets:
+        last_seq_acked = lost_packets[0] - 1
+        start_window = lost_packets[0]
+        threshold = cwnd // 2
+        cwnd = 1
+        print(f"Packets {lost_packets} lost. Adjusting cwnd and window start.")
+        print(f"Resetting cwnd to => {cwnd}")
+        print(f"Resetting the Threshold value => {threshold}")
+        print(f"Next start window becomes => {start_window}")
+
+    else:
+        last_seq_acked = window[-1]
+        start_window += cwnd
+        if cwnd >= threshold:
+            cwnd += 1
+        else:
+            cwnd *= 2
+        print(f"All packets in the window acknowledged. Increasing cwnd and window start.")
+        print(f"Increasing cwnd to => {cwnd}")
+        print(f"Increasing the start window to => {start_window}")
+        print(f"Current Threshold value => {threshold}")
+
+    i += 1
