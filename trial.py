@@ -1,91 +1,75 @@
-import random
-import time
 import matplotlib.pyplot as plt
+import random
 
-class TCPSlowStart:
-    def __init__(self, max_packets=50, drop_probability=0.1, max_congestion_window=16, timeout=5):
+class TCPSlowStartSimulation:
+    def __init__(self, max_packets, ssthresh):
         self.max_packets = max_packets
-        self.drop_probability = drop_probability
-        self.max_congestion_window = max_congestion_window
-        self.timeout = timeout
-        self.cwnd = 1  # Congestion Window
-        self.ssthresh = max_congestion_window // 2
-        self.packets_sent = 0
-        self.packets_acked = 0
-        self.unacked_packets = {}
-        self.time_values = []  # Store time values for plotting
-        self.cwnd_values = []  # Store cwnd values for plotting
-        self.ssthresh_values = []  # Store ssthresh values for plotting
-        self.state = "slow_start"  # Current state
-
-    def send_packet(self, packet_num):
-        if packet_num <= self.max_packets:
-            # Simulate packet transmission
-            if random.random() > self.drop_probability:
-                return True
-        return False
-
-    def receive_ack(self, ack_num):
-        if ack_num in self.unacked_packets:
-            self.packets_acked += 1
-            del self.unacked_packets[ack_num]
-            self.cwnd_values.append(self.cwnd)
-            self.ssthresh_values.append(self.ssthresh)
-            self.time_values.append(time.time() - self.start_time)
-
-            if self.state == "slow_start":
-                if self.cwnd < self.ssthresh:
-                    self.cwnd += 1
-                else:
-                    self.state = "congestion_avoidance"
-            elif self.state == "congestion_avoidance":
-                self.cwnd += int(1 / self.cwnd)
-
-    def timeout_handler(self):
-        print("Timeout occurred. Retransmitting packets...")
-        self.ssthresh = max(self.cwnd // 2, 2)
-        self.cwnd = 1
-        self.state = "slow_start"
-        for packet_num in self.unacked_packets:
-            if packet_num <= self.max_packets:
-                self.unacked_packets[packet_num] = time.time()
+        self.ssthresh = ssthresh
+        self.xValues = []
+        self.yValues = []
+        self.initial_cwnd = 1
+        self.isThresh = 1
+        self.isCongestionAvoidance = 0
+        self.current_cwnd = 1
+        # Generate at least 3 timeouts
+        self.timeout_packets = sorted(random.sample(range(1, max_packets + 1), max(3, random.randint(1, max_packets))))
 
     def run_simulation(self):
-        next_packet_to_send = 1
-        self.start_time = time.time()
-
-        while self.packets_acked < self.max_packets:
-            for packet_num in range(next_packet_to_send, min(next_packet_to_send + int(self.cwnd), self.max_packets + 1)):
-                if self.send_packet(packet_num):
-                    self.unacked_packets[packet_num] = time.time()
-                    print(f"Sending packet {packet_num} (cwnd={self.cwnd}, ssthresh={self.ssthresh})")
-
-            # Simulate ACK reception
-            for packet_num, sent_time in list(self.unacked_packets.items()):
-                if packet_num <= self.max_packets:
-                    ack_received = random.random() > self.drop_probability
-                    if ack_received:
-                        ack_num = packet_num
-                        print(f"Received ACK for packet {ack_num}")
-                        self.receive_ack(ack_num)
-                        next_packet_to_send = max(ack_num + 1, next_packet_to_send)
-                    elif time.time() - sent_time > self.timeout:
-                        self.timeout_handler()
-                        next_packet_to_send = min(self.unacked_packets.keys())
+        i = 1
+        timeout_index = 0
+        while i <= self.max_packets:
+            self.xValues.append(i)
+            if i == 1:
+                self.current_cwnd = self.initial_cwnd
+            else:
+                if timeout_index < len(self.timeout_packets) and i == self.timeout_packets[timeout_index]:
+                    if self.isThresh:
+                        self.current_cwnd *= 2
                     else:
-                        print(f"Packet {packet_num} is unacknowledged (cwnd={self.cwnd}, ssthresh={self.ssthresh})")
+                        self.current_cwnd += 1
+                    self.isThresh = 1
+                    self.isCongestionAvoidance = 0
+                    self.xValues.append(i)
+                    self.yValues.append(self.current_cwnd)
+                    self.ssthresh = int(self.current_cwnd / 2)
+                    self.current_cwnd = self.initial_cwnd
+                    timeout_index += 1
+                elif self.isCongestionAvoidance == 1:
+                    self.current_cwnd += 1
+                elif self.isThresh == 1:
+                    self.current_cwnd *= 2
+                    if self.current_cwnd >= self.ssthresh:
+                        self.isThresh = 0
+                        self.isCongestionAvoidance = 1
+            i += 1
+            self.yValues.append(self.current_cwnd)
 
-            time.sleep(1)
+    def plot_graph(self):
+        fig = plt.figure(figsize=(9, 7), facecolor="#b5b0bf")
+        ax = plt.axes()
+        ax.set_facecolor("#b5b0bf")
 
-        # Plot the congestion window size and ssthresh over time
-        plt.plot(self.time_values, self.cwnd_values, label="cwnd")
-        plt.plot(self.time_values, self.ssthresh_values, label="ssthresh")
-        plt.xlabel('Time')
-        plt.ylabel('Congestion Window Size / ssthresh')
-        plt.title('TCP Slow Start and Congestion Avoidance Simulation')
-        plt.legend()
+        plt.xticks(self.xValues)
+        right_side = ax.spines["right"]
+        right_side.set_visible(False)
+        top_line = ax.spines["top"]
+        top_line.set_visible(False)
+
+        fontsize = 15
+        ax.plot(self.xValues, self.yValues, marker=".", color="#513f8f", linewidth=2, markerfacecolor="black", markersize=12)
+        # plt.title("TCP Slow Start Simulation", fontdict={'fontsize': fontsize + 5})
+        plt.xlabel("Packets sent (RTTs)", fontdict={'fontsize': fontsize})
+        plt.ylabel("Size of cwnd (in MSS)", fontdict={'fontsize': fontsize})
+        # plt.grid(True, color='#b5b0bf', linestyle='-', linewidth=2)
+        # plt.gca().patch.set_facecolor('0.8')
         plt.show()
 
 if __name__ == "__main__":
-    tcp = TCPSlowStart(max_packets=50, drop_probability=0.1, max_congestion_window=16, timeout=5)
-    tcp.run_simulation()
+    # max_packets = int(input("Enter the number of packets to be sent: "))
+    max_packets = 20
+    # ssthresh = int(input("Enter the initial threshold: "))
+    ssthresh = 8
+
+    simulation = TCPSlowStartSimulation(max_packets, ssthresh)
+    simulation.run_simulation()
+    simulation.plot_graph()

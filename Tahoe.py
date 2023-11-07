@@ -1,50 +1,50 @@
 import matplotlib.pyplot as plt
 import random
 
-class TCPSlowStartSimulation:
-    def __init__(self, max_packets, ssthresh):
+class TCPAlternativeTahoe:
+    def __init__(self, max_packets, initial_threshold):
         self.max_packets = max_packets
-        self.ssthresh = ssthresh
+        self.initial_threshold = initial_threshold
         self.xValues = []
         self.yValues = []
         self.initial_cwnd = 1
         self.isThresh = 1
         self.isCongestionAvoidance = 0
         self.current_cwnd = 1
-        # Generate at least 3 timeouts
-        self.timeout_packets = sorted(random.sample(range(1, max_packets + 1), max(3, random.randint(1, max_packets))))
+        # self.timeout_packets = sorted(random.sample(range(1, max_packets + 1), max(3, random.randint(1, max_packets))))
+        self.timeout_packets = [8, 12, 20]
 
-    def run_simulation(self):
+    def simulate(self):
         i = 1
         timeout_index = 0
+        threshold = self.initial_threshold
         while i <= self.max_packets:
             self.xValues.append(i)
             if i == 1:
                 self.current_cwnd = self.initial_cwnd
             else:
                 if timeout_index < len(self.timeout_packets) and i == self.timeout_packets[timeout_index]:
-                    if self.isThresh:
-                        self.current_cwnd *= 2
-                    else:
-                        self.current_cwnd += 1
                     self.isThresh = 1
-                    self.isCongestionAvoidance = 0
-                    self.xValues.append(i)
-                    self.yValues.append(self.current_cwnd)
-                    self.ssthresh = int(self.current_cwnd / 2)
+                    if self.isCongestionAvoidance:
+                        self.isCongestionAvoidance = 0
+                    threshold = int(self.current_cwnd / 2)
                     self.current_cwnd = self.initial_cwnd
                     timeout_index += 1
+                elif self.current_cwnd >= threshold and self.isCongestionAvoidance == 0:
+                    self.current_cwnd = threshold
+                    self.isCongestionAvoidance = 1
+                    self.isThresh = 0
+                    self.current_cwnd = self.current_cwnd + 1
                 elif self.isCongestionAvoidance == 1:
-                    self.current_cwnd += 1
+                    self.current_cwnd = self.current_cwnd + 1
                 elif self.isThresh == 1:
-                    self.current_cwnd *= 2
-                    if self.current_cwnd >= self.ssthresh:
-                        self.isThresh = 0
-                        self.isCongestionAvoidance = 1
+                    self.current_cwnd = self.current_cwnd * 2
+                    if self.current_cwnd > threshold:
+                        self.current_cwnd = threshold
             i += 1
             self.yValues.append(self.current_cwnd)
 
-    def plot_graph(self):
+    def plot_results(self):
         fig = plt.figure(figsize=(9, 7), facecolor="#b5b0bf")
         ax = plt.axes()
         ax.set_facecolor("#b5b0bf")
@@ -57,7 +57,7 @@ class TCPSlowStartSimulation:
 
         fontsize = 15
         ax.plot(self.xValues, self.yValues, marker=".", color="#513f8f", linewidth=2, markerfacecolor="black", markersize=12)
-        # plt.title("TCP Slow Start Simulation", fontdict={'fontsize': fontsize + 5})
+        plt.title("Alternative TCP Tahoe Simulation", fontdict={'fontsize': fontsize + 5})
         plt.xlabel("Packets sent (RTTs)", fontdict={'fontsize': fontsize})
         plt.ylabel("Size of cwnd (in MSS)", fontdict={'fontsize': fontsize})
         # plt.grid(True, color='#b5b0bf', linestyle='-', linewidth=2)
@@ -66,10 +66,10 @@ class TCPSlowStartSimulation:
 
 if __name__ == "__main__":
     # max_packets = int(input("Enter the number of packets to be sent: "))
-    max_packets = 20
-    # ssthresh = int(input("Enter the initial threshold: "))
-    ssthresh = 8
+    max_packets = 30
+    # initial_threshold = int(input("Enter the initial threshold: "))
+    initial_threshold = 8
 
-    simulation = TCPSlowStartSimulation(max_packets, ssthresh)
-    simulation.run_simulation()
-    simulation.plot_graph()
+    simulation = TCPAlternativeTahoe(max_packets, initial_threshold)
+    simulation.simulate()
+    simulation.plot_results()

@@ -37,3 +37,51 @@ while expected_seq_num < 12:
         print(f"Received out-of-order packet {seq_num}. Discarding.")
 
 receiver_socket.close()
+
+# import socket
+# import random
+# import hashlib
+# import time
+
+# # Server configuration
+# server_host = '127.0.0.1'
+# server_port = 12345
+
+# def calc_checksum(message):
+#     hash_obj = hashlib.sha256()
+#     hash_obj.update(message.encode())
+#     return hash_obj.hexdigest()
+
+# # Create a socket
+# server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# server_socket.bind((server_host, server_port))
+
+# print(f"Server listening on {server_host}:{server_port}")
+
+# expected_seq = 0
+# while True:
+#     print("Receiving packet-----------")
+#     data, client_address = server_socket.recvfrom(1024)
+#     data = data.decode('utf-8')
+#     data, rcv_checksum, rcv_seq = data.split(':')
+#     rcv_seq = int(rcv_seq)
+
+#     if random.random() < 0.2:
+#         if random.random() < 0.8:
+#             print("packet lost")
+#             continue
+#         else:
+#             data = "error"   
+
+#     if calc_checksum(data) == rcv_checksum and expected_seq == rcv_seq:
+#         ack_checksum = calc_checksum("ACK")
+#         print(f"Message received: {data} with seq no - {rcv_seq}")
+#         ACK = f"ACK:{ack_checksum}:{expected_seq}"
+#         time.sleep(3)
+#         server_socket.sendto(ACK.encode('utf-8'), client_address)
+#         expected_seq +=1
+#     else:
+#         print("packet corrupted")
+#         continue
+#         #server_socket.sendto(ACK.encode('utf-8'), client_address)
+    
